@@ -1,42 +1,73 @@
-#  Pyrogram - Telegram MTProto API Client Library for Python
-#  Copyright (C) 2017-present Dan <https://github.com/delivrance>
 #
-#  This file is part of Pyrogram.
+# Copyright (C) 2021-2022 by TeamYukki@Github, < https://github.com/TeamYukki >.
 #
-#  Pyrogram is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Lesser General Public License as published
-#  by the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
+# This file is part of < https://github.com/TeamYukki/YukkiMusicBot > project,
+# and is released under the "GNU v3.0 License Agreement".
+# Please see < https://github.com/TeamYukki/YukkiMusicBot/blob/master/LICENSE >
 #
-#  Pyrogram is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with Pyrogram.  If not, see <http://www.gnu.org/licenses/>.
+# All rights reserved.
 
-__version__ = "2.0.69"
-__license__ = "GNU Lesser General Public License v3.0 (LGPL-3.0)"
-__copyright__ = "Copyright (C) 2017-present Dan <https://github.com/delivrance>"
+import sys
 
-from concurrent.futures.thread import ThreadPoolExecutor
+from pyrogram import Client
+from pyrogram.types import BotCommand
+
+import config
+
+from ..logging import LOGGER
 
 
-class StopTransmission(Exception):
-    pass
+class YukkiBot(Client):
+    def __init__(self):
+        LOGGER(__name__).info(f"Starting Bot")
+        super().__init__(
+            "YukkiMusicBot",
+            api_id=config.API_ID,
+            api_hash=config.API_HASH,
+            bot_token=config.BOT_TOKEN,
+        )
 
-
-class StopPropagation(StopAsyncIteration):
-    pass
-
-
-class ContinuePropagation(StopAsyncIteration):
-    pass
-
-
-from . import raw, types, filters, handlers, emoji, enums
-from .client import Client
-from .sync import idle, compose
-
-crypto_executor = ThreadPoolExecutor(1, thread_name_prefix="CryptoWorker")
+    async def start(self):
+        await super().start()
+        get_me = await self.get_me()
+        self.username = get_me.username
+        self.id = get_me.id
+        try:
+            await self.send_message(
+                config.LOG_GROUP_ID, "Bot Started"
+            )
+        except:
+            LOGGER(__name__).error(
+                "Bot has failed to access the log Group. Make sure that you have added your bot to your log channel and promoted as admin!"
+            )
+            sys.exit()
+        if config.SET_CMDS == str(True):
+            try:
+                await self.set_bot_commands(
+                    [
+                        BotCommand("ping", "Check that bot is alive or dead"),
+                        BotCommand("play", "Starts playing the requested song"),
+                        BotCommand("skip", "Moves to the next track in queue"),
+                        BotCommand("pause", "Pause the current playing song"),
+                        BotCommand("resume", "Resume the paused song"),
+                        BotCommand("end", "Clear the queue and leave voice chat"),
+                        BotCommand("shuffle", "Randomly shuffles the queued playlist."),
+                        BotCommand("playmode", "Allows you to change the default playmode for your chat"),
+                        BotCommand("settings", "Open the settings of the music bot for your chat.")
+                        ]
+                    )
+            except:
+                pass
+        else:
+            pass
+        a = await self.get_chat_member(config.LOG_GROUP_ID, self.id)
+        if a.status != "administrator":
+            LOGGER(__name__).error(
+                "Please promote Bot as Admin in Logger Group"
+            )
+            sys.exit()
+        if get_me.last_name:
+            self.name = get_me.first_name + " " + get_me.last_name
+        else:
+            self.name = get_me.first_name
+        LOGGER(__name__).info(f"MusicBot Started as {self.name}")
