@@ -30,10 +30,11 @@ def add_corners(im):
     mask = ImageChops.darker(mask, im.split()[-1])
     im.putalpha(mask)
 
+    
+async def gen_thumb(videoid):
+    if os.path.isfile(f"cache/{videoid}.png"):
+        return f"cache/{videoid}.png"
 
-async def gen_thumb(videoid, user_id):
-    if os.path.isfile(f"cache/{videoid}_{user_id}.png"):
-        return f"cache/{videoid}_{user_id}.png"
     url = f"https://www.youtube.com/watch?v={videoid}"
     try:
         results = VideosSearch(url, limit=1)
@@ -47,21 +48,23 @@ async def gen_thumb(videoid, user_id):
             try:
                 duration = result["duration"]
             except:
-                duration = "Unknown"
+                duration = "Unknown Mins"
             thumbnail = result["thumbnails"][0]["url"].split("?")[0]
             try:
-                result["viewCount"]["short"]
+                views = result["viewCount"]["short"]
             except:
-                pass
+                views = "Unknown Views"
             try:
-                result["channel"]["name"]
+                channel = result["channel"]["name"]
             except:
-                pass
+                channel = "Unknown Channel"
 
         async with aiohttp.ClientSession() as session:
             async with session.get(thumbnail) as resp:
                 if resp.status == 200:
-                    f = await aiofiles.open(f"cache/thumb{videoid}.png", mode="wb")
+                    f = await aiofiles.open(
+                        f"cache/thumb{videoid}.png", mode="wb"
+                    )
                     await f.write(await resp.read())
                     await f.close()
 
